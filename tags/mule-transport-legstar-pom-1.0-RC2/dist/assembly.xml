@@ -1,0 +1,67 @@
+<!--
+Assembly descriptor for the full distribution.
+-->
+<assembly>
+    <id>LEGSTAR</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <fileSets>
+        <fileSet>
+            <directory>../doc</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>*.txt</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>../examples/src/main/cobol</directory>
+            <outputDirectory>/samples/cobol</outputDirectory>
+            <includes>
+                <include>*.cbl</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>../transport/src/test/resources</directory>
+            <outputDirectory>/conf</outputDirectory>
+            <includes>
+                <include>*.*</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>../tools/src/main/resources/ant</directory>
+            <outputDirectory>ant</outputDirectory>
+            <includes>
+                <include>build-*.xml</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>lib/mule</outputDirectory>
+            <scope>runtime</scope>
+            <includes>
+                <include>org.mule.transports:mule-transport-legstar</include>
+            </includes>
+        </dependencySet>
+        <dependencySet>
+            <outputDirectory>lib/opt</outputDirectory>
+            <scope>runtime</scope>
+            <excludes>
+                <exclude>org.mule.transports:mule-transport-legstar</exclude>
+                <exclude>org.mule.transports:mule-transport-legstar-dist</exclude>
+            </excludes>
+        </dependencySet>
+        <!-- Samples/Test libraries -->
+        <dependencySet>
+            <outputDirectory>lib/user</outputDirectory>
+            <!-- <outputFileNameMapping>${artifactId}.${extension}</outputFileNameMapping> -->
+            <scope>test</scope>
+            <includes>
+                <include>com.legsem.legstar:legstar-jaxbgen-cases</include>
+                <include>com.legsem.legstar:legstar-coxbgen-cases</include>
+                <include>com.legsem.legstar:legstar-xsdcgen-cases</include>
+            </includes>
+        </dependencySet>
+     </dependencySets>
+</assembly>
