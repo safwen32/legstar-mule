@@ -1,0 +1,231 @@
+##/////////////////////////////////////////////////////////////////////
+##Mule Component adapter configuration XML Template.
+##@author Fady
+##/////////////////////////////////////////////////////////////////////
+## ==================================================================
+## Calculates the maximum host size of a structure
+## 
+#macro(getLength $structure)
+#set($length = ${coxbHelper.getByteLength(${structure.jaxbPackageName}, ${structure.jaxbType})})
+#end
+## ==================================================================
+## for commarea-driven programs, this calculates the size of the
+## input or output structure allowing for no input or no output
+## 
+#macro(getCommareaLength $structures)
+#set($length = 0)
+#if(${structures.size()} > 0)
+#set($structure = ${structures.get(0)})
+#getLength($structure)
+#end
+#end
+## ==================================================================
+## for container-driven programs, produce elements for each container
+## in a container list
+## 
+#macro(produceContainers $structures $containerType)
+#foreach($structure in ${structures})
+#getLength($structure)
+                                    <legstar:${containerType}-container name="${structure.cicsContainer}" maxLength="${length}" />
+#end
+#end
+## ==================================================================
+#if($sampleConfigurationPayloadType == "java")
+#set($sampleConfigurationPayloadTypeComment = "serialized java objects")
+#set($transformerType = "")
+#end
+#if($sampleConfigurationPayloadType == "xml")
+#set($sampleConfigurationPayloadTypeComment = "XML strings")
+#set($transformerType = "Xml")
+#end
+#if($sampleConfigurationTransport == "http")
+#set($sampleConfigurationTransportComment = "LEGSTAR-HTTP")
+#end
+#if($sampleConfigurationTransport == "wmq")
+#set($sampleConfigurationTransportComment = "JMS/WebSphere MQ")
+#end
+#if($sampleConfigurationTransport == "tcp")
+#set($sampleConfigurationTransportComment = "LEGSTAR-TCP")
+#end
+#if($sampleConfigurationTransport == "mock")
+#set($sampleConfigurationTransportComment = "LEGSTAR-MOCK")
+#end
+## ==================================================================
+#if($sampleConfigurationHostMessagingType == "legstar")
+#set($hostToRequestTransformer = "legstar:host-to-legstar-transformer")
+#set($responseToHostTransformer = "legstar:legstar-to-host-transformer")
+#end
+#if($sampleConfigurationHostMessagingType == "mqcih")
+#set($hostToRequestTransformer = "legstar-wmq:host-to-mqcih-transformer")
+#set($responseToHostTransformer = "legstar-wmq:mqcih-to-host-transformer")
+#end
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  This Mule configuration implements an adapter service for a mainframe program.
+      Clients of this Mule service are expected to send ${sampleConfigurationPayloadTypeComment} over HTTP.
+      Transport from Mule service to mainframe is ${sampleConfigurationTransportComment}.
+ -->
+## ==================================================================
+## XML Schema definitions
+## ==================================================================
+<mule xmlns="http://www.mulesource.org/schema/mule/core/2.2"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:http="http://www.mulesource.org/schema/mule/http/2.2"
+        xmlns:legstar="http://www.mulesource.org/schema/mule/legstar/2.2"
+#if($sampleConfigurationTransport == "wmq")
+        xmlns:jms="http://www.mulesource.org/schema/mule/jms/2.2"
+        xmlns:legstar-wmq="http://www.mulesource.org/schema/mule/legstar/wmq/2.2"
+#end
+#if($sampleConfigurationTransport == "tcp")
+        xmlns:legstar-tcp="http://www.mulesource.org/schema/mule/legstar/tcp/2.2"
+#end
+#if($sampleConfigurationTransport == "mock")
+        xmlns:legstar-mock="http://www.mulesource.org/schema/mule/legstar/mock/2.2"
+#end
+    xsi:schemaLocation=
+        "http://www.mulesource.org/schema/mule/core/2.2 http://www.mulesource.org/schema/mule/core/2.2/mule.xsd
+         http://www.mulesource.org/schema/mule/http/2.2 http://www.mulesource.org/schema/mule/http/2.2/mule-http.xsd
+         http://www.mulesource.org/schema/mule/legstar/2.2 http://www.legsem.com/legstar/xml/mule-legstar-1.0.xsd
+#if($sampleConfigurationTransport == "wmq")
+         http://www.mulesource.org/schema/mule/jms/2.2 http://www.mulesource.org/schema/mule/jms/2.2/mule-jms.xsd
+         http://www.mulesource.org/schema/mule/legstar/wmq/2.2 http://www.legsem.com/legstar/xml/mule-legstar-wmq-1.0.xsd
+#end
+#if($sampleConfigurationTransport == "tcp")
+         http://www.mulesource.org/schema/mule/legstar/tcp/2.2 http://www.legsem.com/legstar/xml/mule-legstar-tcp-1.0.xsd
+#end
+#if($sampleConfigurationTransport == "mock")
+         http://www.mulesource.org/schema/mule/legstar/mock/2.2 http://www.legsem.com/legstar/xml/mule-legstar-mock-1.0.xsd
+#end
+        ">
+
+    <description>Mule configuration for ${muleComponent.name} adapter service</description>
+
+## ==================================================================
+## Connectors definitions
+## ==================================================================
+#if($sampleConfigurationTransport == "wmq")
+    <legstar-wmq:connector name="mainframeConnector"
+        jndiInitialFactory="${wmqJndiContextFactory}"
+        jndiProviderUrl="${wmqJndiUrl}"
+        connectionFactoryJndiName="${wmqConnectionFactory}"
+        specification="1.1"
+        jndiDestinations="true"
+        forceJndiDestinations="true"
+        disableTemporaryReplyToDestinations="true"
+        numberOfConsumers="1" >
+    </legstar-wmq:connector>
+#end
+
+## ==================================================================
+## Clent endpoints definitions
+## ==================================================================
+#foreach ($cixsOperation in $muleComponent.cixsOperations)
+    <http:endpoint name="${cixsOperation.name}ClientEndpoint" synchronous="true"
+        address="http://localhost:3280/${cixsOperation.name}" />
+#end
+
+## ==================================================================
+## Mainframe endpoints definitions
+## ==================================================================
+#if($sampleConfigurationTransport == "http")
+    <legstar:endpoint name="mainframeRequestEndpoint" synchronous="true"
+        address="legstar:${httpURL}" />
+#end
+#if($sampleConfigurationTransport == "wmq")
+    <legstar-wmq:endpoint name="mainframeRequestEndpoint" synchronous="true"
+        address="legstar-wmq://${wmqRequestQueue}" />
+
+    <legstar-wmq:endpoint name="mainframeReplyEndpoint"
+        address="legstar-wmq://${wmqReplyQueue}" />
+#end
+#if($sampleConfigurationTransport == "tcp")
+    <legstar-tcp:endpoint name="mainframeRequestEndpoint" synchronous="true"
+        address="legstar-tcp://${tcpHost}:${tcpPort}" />
+#end
+#if($sampleConfigurationTransport == "mock")
+    <legstar-mock:endpoint name="mainframeRequestEndpoint" synchronous="true"
+        address="legstar-mock://localhost" />
+#end
+
+## ==================================================================
+## Model and Service definitions
+## ==================================================================
+    <model name="${muleComponent.name}Model">
+
+#foreach ($cixsOperation in $muleComponent.cixsOperations)
+#set($operationPackageName = ${cixsOperation.packageName})
+#set($requestTransformer = "${cixsOperation.requestHolderType}${transformerType}ToHostMuleTransformer")
+#set($responseTransformer = "HostTo${cixsOperation.responseHolderType}${transformerType}MuleTransformer")
+#set($qualRequestTransformer = ${helper.getQualClassName($operationPackageName, $requestTransformer)})
+#set($qualResponseTransformer = ${helper.getQualClassName($operationPackageName, $responseTransformer)})
+        <service name="${cixsOperation.name}AdapterService">
+            <inbound>
+                <inbound-endpoint ref="${cixsOperation.name}ClientEndpoint" >
+                    <transformers>
+                        <byte-array-to-object-transformer />
+                    </transformers>
+                </inbound-endpoint>
+            </inbound>
+            <outbound>
+                <pass-through-router>
+                    <outbound-endpoint ref="mainframeRequestEndpoint" >
+                        <transformers>
+                            <legstar:${sampleConfigurationPayloadType}-to-host-transformer
+#if($hostCharset)
+                                hostCharset="${hostCharset}"
+#end                                
+                                class="${qualRequestTransformer}" />
+                            <${hostToRequestTransformer}
+#if($hostCharset)
+                                hostCharset="${hostCharset}"
+#end
+#if($sampleConfigurationTransport == "wmq")
+                                replyTo="mainframeReplyEndpoint"
+#end
+                            >
+                                <legstar:host-program
+                                    name="${cixsOperation.cicsProgramName.toUpperCase()}"
+#if(${cixsOperation.cicsChannel})
+                                    channelName="${cixsOperation.cicsChannel}"
+#else
+#getCommareaLength(${cixsOperation.getInput()})
+#set($inputLength = $length)
+#getCommareaLength(${cixsOperation.getOutput()})
+#set($outputLength = $length)
+#if($outputLength > $inputLength)
+                                    maxDataLength="${outputLength}"
+                                    dataLength="${inputLength}"
+#else
+                                    maxDataLength="${inputLength}"
+#end
+#end
+                                >
+#if(${cixsOperation.cicsChannel})
+#if(${cixsOperation.getInput().size()} > 0)
+#produceContainers(${cixsOperation.getInput()} "input")
+#end
+#if(${cixsOperation.getOutput().size()} > 0)
+#produceContainers(${cixsOperation.getOutput()} "output")
+#end
+#end
+                                </legstar:host-program>
+                            </${hostToRequestTransformer}>
+#if($sampleConfigurationTransport == "wmq")
+                            <jms:object-to-jmsmessage-transformer />
+#end
+                        </transformers>
+                        <response-transformers>
+                            <${responseToHostTransformer} />
+                            <legstar:host-to-${sampleConfigurationPayloadType}-transformer
+#if($hostCharset)
+                                hostCharset="${hostCharset}"
+#end                                
+                                class="${qualResponseTransformer}" />
+                        </response-transformers>
+                    </outbound-endpoint>
+                </pass-through-router>
+            </outbound>
+        </service>
+
+#end
+    </model>
+</mule>
