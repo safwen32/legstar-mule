@@ -40,7 +40,7 @@ on Windows.
 
 == Pre requisites ==
 
-JRE 1.5+ and ANT 1.6.5+ are both prerequisites for Mule and !LegStar.
+JRE 1.6+ and ANT 1.6.5+ are both prerequisites for Mule and !LegStar.
 Make sure JAVA_HOME and ANT_HOME environment variables are set and that
 $JAVA_HOME/bin and $ANT_HOME/bin are both in you system path.
 
