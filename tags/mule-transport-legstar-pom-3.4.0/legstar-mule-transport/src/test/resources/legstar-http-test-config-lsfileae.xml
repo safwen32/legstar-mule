@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  This Mule configuration implements an adapter service for a mainframe program.
+      Clients of this Mule service are expected to send serialized java objects over HTTP.
+      Transport from Mule service to mainframe is LEGSTAR-HTTP.
+ -->
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+        xmlns:legstar="http://www.mulesoft.org/schema/mule/legstar"
+        xmlns:test="http://www.mulesoft.org/schema/mule/test"
+    xsi:schemaLocation=
+        "http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.4/mule.xsd
+         http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/3.4/mule-vm.xsd
+         http://www.mulesoft.org/schema/mule/legstar http://www.legsem.com/legstar/xml/mule-legstar-3.4.xsd
+         http://www.mulesoft.org/schema/mule/test http://www.mulesoft.org/schema/mule/test/3.4/mule-test.xsd" >
+
+    <description>Mule configuration for lsfileae adapter service</description>
+
+    <!-- Host credentials can be passed at the connector level 
+     <legstar:connector name="mainframeConnector" hostUserID="P390" hostPassword="STREAM2"/>
+      -->
+      
+    <legstar:connector name="mainframeConnector"/>
+
+    <!-- Host credentials can be passed in the URL user info -->
+    <legstar:endpoint name="mainframeRequestEndpoint"
+    	exchange-pattern="request-response"
+    	address="legstar://P390:STREAM2@mainframe:4080/CICS/CWBA/LSWEBBIN"
+    	connector-ref="mainframeConnector" />
+
+    <vm:endpoint name="lsfileaeClientEndpoint" path="customer.requests"/>
+
+    <flow name="lsfileaeClient">
+        <inbound-endpoint ref="lsfileaeClientEndpoint" exchange-pattern="request-response"/>
+        <processor-chain>
+            <flow-ref name="lsfileaeMainframe"/>
+        </processor-chain>
+    </flow>
+
+    <sub-flow name="lsfileaeMainframe">
+
+        <legstar:java-to-host-transformer
+            hostCharset="IBM01147"
+            class="org.mule.transport.legstar.test.lsfileae.DfhcommareaToHostMuleTransformer" />
+
+        <legstar:host-to-legstar-transformer
+            hostCharset="IBM01147">
+            <legstar:host-program
+                programName="LSFILEAE"
+                maxDataLength="79"
+                transID="LALT"
+                syncOnReturn="true"
+                sysID="CICS"/>
+        </legstar:host-to-legstar-transformer>
+
+        <outbound-endpoint ref="mainframeRequestEndpoint"/>
+
+        <legstar:legstar-to-host-transformer />
+        <legstar:host-to-java-transformer
+            hostCharset="IBM01147"
+            class="org.mule.transport.legstar.test.lsfileae.HostToDfhcommareaMuleTransformer" />
+
+    </sub-flow>
+
+</mule>

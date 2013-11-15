@@ -1,0 +1,62 @@
+<!-- =================================================================================
+     This script generates a Mapping XML Schema from a set of Java classes.
+     It is assumed the Java classes binaries available from the bin folder
+     otherwise modify the classpath to include your binaries.
+  -->
+<project basedir=".." default="generateXSD" name="generate-XSD">
+
+    <!-- ===========================================================  -->
+    <!-- Setup environment
+    -->
+    <target name="init">
+    
+        <property environment="env"/>
+        <!-- LegStar location -->
+        <property name="legstar.home" value="${env.LEGSTAR_HOME}" />
+        <!-- Root Java classes   -->
+        <property name="request.class.name" value="com.legstar.xsdc.test.cases.jvmquery.JVMQueryRequest" />
+        <property name="reply.class.name" value="com.legstar.xsdc.test.cases.jvmquery.JVMQueryReply" />
+        <!-- Target location for generated XML schema   -->
+        <property name="xsd.dir" value="schema" />
+        <!-- Target location for generated COBOL copybooks   -->
+        <property name="cpy.dir" value="cobol" />
+        
+        <!-- Classpath setting -->
+        <path id="classpath">
+            <pathelement location="${basedir}"/>
+            <fileset dir="${legstar.home}" includes="lib/*.jar" />
+            <pathelement location="bin"/>
+        </path>
+        
+        <!-- Java to COBOL Structure translator ant task  -->
+        <taskdef name="java2cob"
+            classname="com.legstar.xsd.java.Java2CobTask"
+            classpathref="classpath"/>
+  
+    </target>
+
+    <!-- ===========================================================  -->
+    <!-- Generate a Mapping XML Schema. Here we explicitly
+        specify the root class names. As an alternative, the POJO
+        could be annotated with JSR 181 XmlRootElement.
+    -->
+    <target name="generateXSD" depends="init">
+
+        <echo message="Translating classes:" />
+        <echo message="- ${request.class.name}"/>
+        <echo message="- ${reply.class.name}"/>
+        <java2cob>
+            <options 
+                targetXsdFile="${xsd.dir}"
+                targetCobolFile="${cpy.dir}"
+            >
+                <className>${request.class.name}</className>
+                <className>${reply.class.name}</className>
+            </options>
+        </java2cob>
+        <echo message="Java classes successfully translated" />
+        <echo message="COBOL copybook generated in cobol" />
+        <echo message="COBOL-annotated XML schema generated in schema" />
+    </target>
+
+</project>
